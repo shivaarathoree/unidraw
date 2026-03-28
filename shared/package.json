@@ -1,0 +1,9 @@
+{
+  "name": "@unidraw/shared",
+  "version": "1.0.0",
+  "main": "src/types.ts",
+  "exports": {
+    ".": "./src/types.ts"
+  },
+  "type": "module"
+}

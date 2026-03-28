@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UNIDRAW — Collaborative Canvas & AI Art</title>
+  
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Icons -->
+  <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;0,6..96,600;1,6..96,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-cream: #FAF8F3;
+      --ink-black: #1A1818;
+      --gold: #C5A059;
+      --border-width: 3px;
+      --radius-pill: 24px;
+      --font-display: 'Bodoni Moda', serif;
+      --font-sans: 'Inter', sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background-color: rgba(26,24,24,0.2); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background-color: var(--ink-black); }
+
+    body {
+      background-color: var(--bg-cream);
+      color: var(--ink-black);
+      font-family: var(--font-sans);
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 1rem;
+      overflow: hidden;
+    }
+
+    @media (min-width: 768px) {
+      body { padding: 3vh; }
+    }
+
+    .museum-frame {
+      width: 100%;
+      height: 100%;
+      max-width: 1440px;
+      border: 2px solid var(--ink-black);
+      background-color: var(--bg-cream);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      overflow-x: hidden;
+      border-radius: 12px;
+      scrollbar-width: thin;
+    }
+
+    @media (min-width: 768px) {
+      .museum-frame {
+        border-width: var(--border-width);
+        border-radius: 20px;
+      }
+    }
+
+    .museum-frame { scroll-behavior: smooth; }
+
+    .font-display { font-family: var(--font-display); }
+    .font-sans { font-family: var(--font-sans); }
+    .text-gold { color: var(--gold); }
+
+    .nav-item {
+      font-family: var(--font-sans);
+      text-decoration: none;
+      color: var(--ink-black);
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      position: relative;
+      padding-bottom: 2px;
+    }
+
+    .nav-item::after {
+      content: '';
+      position: absolute;
+      width: 0;
+      height: 1px;
+      bottom: 0;
+      left: 0;
+      background-color: var(--ink-black);
+      transition: width 0.3s ease;
+    }
+
+    .nav-item:hover::after { width: 100%; }
+
+    .hero-title {
+      font-family: var(--font-display);
+      font-size: clamp(3rem, 12vw, 9rem);
+      font-weight: 500;
+      line-height: 0.9;
+      letter-spacing: -0.03em;
+      text-transform: uppercase;
+      background-image: url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80');
+      background-size: cover;
+      background-position: center;
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      opacity: 0;
+      animation: fadeInScale 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .masonry-gallery {
+      column-count: 1;
+      column-gap: 2rem;
+      width: 100%;
+      margin-bottom: 4rem;
+    }
+
+    @media (min-width: 640px) { .masonry-gallery { column-count: 2; margin-bottom: 6rem; } }
+    @media (min-width: 1024px) { .masonry-gallery { column-count: 3; } }
+
+    .gallery-card {
+      break-inside: avoid;
+      margin-bottom: 2rem;
+      position: relative;
+      border-radius: 16px;
+      overflow: hidden;
+      background-color: #eee;
+      cursor: pointer;
+      opacity: 0;
+      animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .gallery-card:nth-child(1) { animation-delay: 0.1s; }
+    .gallery-card:nth-child(2) { animation-delay: 0.2s; }
+    .gallery-card:nth-child(3) { animation-delay: 0.3s; }
+    .gallery-card:nth-child(4) { animation-delay: 0.4s; }
+    .gallery-card:nth-child(5) { animation-delay: 0.5s; }
+    .gallery-card:nth-child(6) { animation-delay: 0.6s; }
+
+    .gallery-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 1.2s cubic-bezier(0.19, 1, 0.22, 1);
+      display: block;
+    }
+
+    .gallery-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, transparent 10%, rgba(26, 24, 24, 0.9));
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 1.5rem;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    .gallery-card:hover .gallery-overlay { opacity: 1; }
+    .gallery-card:hover .gallery-image { transform: scale(1.08); }
+
+    .feature-card {
+      padding: 2.5rem 1.5rem;
+      border: 1px solid rgba(26,24,24,0.1);
+      border-radius: 20px;
+      transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+      background: #fff;
+      position: relative;
+      overflow: hidden;
+      height: auto;
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+    }
+
+    @media (min-width: 768px) {
+      .feature-card {
+        padding: 3rem;
+        flex-direction: row;
+        align-items: center;
+        gap: 2rem;
+        text-align: left;
+      }
+    }
+
+    .feature-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--gold);
+      box-shadow: 0 15px 30px rgba(197, 160, 89, 0.1);
+    }
+
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; bottom: 0; width: 4px;
+      background: var(--gold);
+      transform: scaleY(0);
+      transition: transform 0.5s ease;
+      transform-origin: bottom;
+    }
+
+    .feature-card:hover::before { transform: scaleY(1); }
+
+    .btn-gold {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.9rem 1.8rem;
+      border: 1px solid var(--ink-black);
+      text-decoration: none;
+      color: var(--ink-black);
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      transition: all 0.3s ease;
+      background: transparent;
+      cursor: pointer;
+      width: auto;
+    }
+
+    .btn-gold:hover {
+      background: var(--ink-black);
+      color: #fff;
+      border-color: var(--ink-black);
+    }
+
+    @keyframes fadeInScale {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(40px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .bg-grid-pattern {
+      background-image: radial-gradient(rgba(26,24,24,0.15) 1px, transparent 1px);
+      background-size: 24px 24px;
+      background-position: -12px -12px;
+    }
+
+    .toolbar-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 0.75rem;
+      color: #6B7280;
+      transition: all 0.2s;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+    }
+
+    .toolbar-btn:hover { background-color: #F3F4F6; color: var(--ink-black); }
+    .toolbar-btn.active { background-color: #EEF2FF; color: #4F46E5; }
+
+    @keyframes cursorMove {
+      0% { transform: translate(0px, 0px); }
+      25% { transform: translate(40px, -20px); }
+      50% { transform: translate(60px, 30px); }
+      75% { transform: translate(10px, 50px); }
+      100% { transform: translate(0px, 0px); }
+    }
+
+    .animate-cursor {
+      animation: cursorMove 8s ease-in-out infinite;
+    }
+  </style>
+</head>
+<body class="antialiased selection:bg-[#C5A059] selection:text-white bg-stone-200">
+
+  <div class="museum-frame shadow-[0px_0px_0px_1px_rgba(0,0,0,0.06),1px_1px_1px_-0.5px_rgba(0,0,0,0.06),3px_3px_3px_-1.5px_rgba(0,0,0,0.06),_6px_6px_6px_-3px_rgba(0,0,0,0.06),12px_12px_12px_-6px_rgba(0,0,0,0.06),24px_24px_24px_-12px_rgba(0,0,0,0.06)] relative overflow-hidden">
+    
+    <!-- LANDING PAGE VIEW -->
+    <div id="landing-view" class="w-full h-full overflow-y-auto px-6 py-6 md:px-20 md:py-16">
+      
+      <!-- HEADER -->
+      <header class="flex flex-row justify-between items-center mb-10 md:mb-20 flex-shrink-0 sticky top-0 md:relative z-40 bg-[#FAF8F3]/90 backdrop-blur-md md:bg-transparent py-4 md:py-0 w-full border-b md:border-none border-gray-200">
+        <div class="flex justify-between w-full md:w-auto items-center">
+          <div class="font-sans text-xs uppercase tracking-widest leading-relaxed flex items-center gap-2">
+            <iconify-icon icon="solar:pen-new-round-linear" class="text-lg"></iconify-icon>
+            <span class="font-medium text-base block md:inline">UNIDRAW</span>
+          </div>
+          <button class="md:hidden text-2xl p-1 text-ink-black flex items-center justify-center">
+            <iconify-icon icon="solar:hamburger-menu-linear"></iconify-icon>
+          </button>
+        </div>
+        
+        <nav class="hidden md:flex gap-8 items-center">
+          <a href="#" class="nav-item">Home</a>
+          <a href="#studio" class="nav-item">Features</a>
+          <a href="#gallery" class="nav-item">Showcase</a>
+          <a href="#pricing" class="nav-item">Pricing</a>
+        </nav>
+
+        <button class="open-app-btn btn-gold hidden md:inline-flex rounded-full px-6 py-3 text-xs">Open Canvas</button>
+      </header>
+
+      <main class="w-full mx-auto">
+        <!-- HERO -->
+        <section class="flex flex-col items-center justify-center text-center mb-20 md:mb-32 flex-shrink-0 relative mt-4 md:mt-0">
+          <p class="font-display italic text-gold text-lg md:text-2xl mb-6 animate-[slideUp_1s_ease_forwards]">Shared intelligence</p>
+          <h1 class="hero-title mb-8 leading-none">UNIDRAW</h1>
+          
+          <div class="flex flex-col md:flex-row items-center gap-6 md:gap-12 animate-[slideUp_1.4s_ease_forwards] opacity-0" style="animation-delay: 0.5s;">
+            <p class="font-sans text-xs md:text-sm text-gray-500 max-w-md leading-relaxed text-center md:text-left">
+              Think, draw, and generate in one shared space. Experience an infinite collaborative whiteboard enhanced with native, visceral AI art generation.
+            </p>
+            <button class="open-app-btn group flex items-center gap-2 font-sans text-xs uppercase tracking-widest hover:text-gold transition-colors bg-transparent border-none cursor-pointer">
+              Start Drawing for Free 
+              <iconify-icon icon="solar:arrow-right-linear" class="group-hover:translate-x-1 transition-transform"></iconify-icon>
+            </button>
+          </div>
+        </section>
+
+        <!-- MASONRY GALLERY -->
+        <section id="gallery" class="masonry-gallery">
+          <div class="gallery-card aspect-[3/4]">
+            <img src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=1600&auto=format&fit=crop" class="gallery-image object-cover w-full h-auto" alt="Architecture">
+            <div class="gallery-overlay">
+              <h3 class="font-display text-2xl md:text-3xl italic text-white mb-2 tracking-tight">Architecture</h3>
+              <p class="font-sans text-xs text-gray-300">From grid wireframe to realistic render.</p>
+            </div>
+          </div>
+          <div class="gallery-card aspect-[4/3]">
+            <img src="https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=1600&auto=format&fit=crop" class="gallery-image object-cover w-full h-auto" alt="Concept">
+            <div class="gallery-overlay">
+              <h3 class="font-display text-2xl md:text-3xl italic text-white mb-2 tracking-tight">Concept Art</h3>
+              <p class="font-sans text-xs text-gray-300">Rough sketch to cinematic environment.</p>
+            </div>
+          </div>
+          <div class="gallery-card aspect-square">
+            <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1600&auto=format&fit=crop" class="gallery-image object-cover w-full h-auto" alt="Abstract">
+            <div class="gallery-overlay">
+              <h3 class="font-display text-2xl md:text-3xl italic text-white mb-2 tracking-tight">Abstract Forms</h3>
+              <p class="font-sans text-xs text-gray-300">Collaborative aesthetic exploration.</p>
+            </div>
+          </div>
+          <div class="gallery-card aspect-[3/4]">
+            <img src="https://images.unsplash.com/photo-1581291518857-4e27b48ff24e?q=80&w=1600&auto=format&fit=crop" class="gallery-image object-cover w-full h-auto" alt="UI">
+            <div class="gallery-overlay">
+              <h3 class="font-display text-2xl md:text-3xl italic text-white mb-2 tracking-tight">UI Wireframes</h3>
+              <p class="font-sans text-xs text-gray-300">Layout planning on the grid canvas.</p>
+            </div>
+          </div>
+          <div class="gallery-card aspect-square">
+            <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=1600&auto=format&fit=crop" class="gallery-image object-cover w-full h-auto" alt="Character">
+            <div class="gallery-overlay">
+              <h3 class="font-display text-2xl md:text-3xl italic text-white mb-2 tracking-tight">Character</h3>
+              <p class="font-sans text-xs text-gray-300">Multiplayer ideation & refinement.</p>
+            </div>
+          </div>
+          <div class="gallery-card aspect-[4/5]">
+            <img src="https://images.unsplash.com/photo-1614850523459-c2f4c699c52e?q=80&w=1600&auto=format&fit=crop" class="gallery-image object-cover w-full h-auto" alt="3D">
+            <div class="gallery-overlay">
+              <h3 class="font-display text-2xl md:text-3xl italic text-white mb-2 tracking-tight">3D Assets</h3>
+              <p class="font-sans text-xs text-gray-300">Prompting geometry directly on canvas.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- FEATURES -->
+        <section id="studio" class="mb-20 md:mb-32 px-2 md:px-0">
+          <div class="flex flex-col md:flex-row justify-between items-end mb-12 md:mb-16 gap-6">
+            <div>
+              <h2 class="font-display text-3xl md:text-5xl italic tracking-tight mb-4">The Colab Engine</h2>
+              <p class="font-sans text-sm text-gray-500 max-w-sm leading-relaxed">Not just an AI prompt box. A fully featured workspace where human intent meets machine intelligence.</p>
+            </div>
+            <button class="open-app-btn hidden md:flex items-center gap-2 text-xs uppercase tracking-widest hover:text-gold transition-colors bg-transparent border-none cursor-pointer">Start Drawing <iconify-icon icon="solar:arrow-right-linear"></iconify-icon></button>
+          </div>
+
+          <div class="grid grid-cols-1 gap-6 max-w-4xl mx-auto">
+            <div class="feature-card group hover:bg-[#1A1818] hover:text-white transition-colors duration-500">
+              <div class="w-16 h-16 rounded-full border border-gray-200 group-hover:border-gray-700 flex flex-shrink-0 items-center justify-center text-gold text-2xl mb-6 md:mb-0">
+                <iconify-icon icon="solar:users-group-two-rounded-linear"></iconify-icon>
+              </div>
+              <div class="flex-1 md:pl-4">
+                <div class="font-display text-xl md:text-2xl italic mb-2 tracking-tight">1. Live Multiplayer</div>
+                <p class="font-sans text-sm text-gray-500 group-hover:text-gray-400 leading-relaxed max-w-lg">
+                  Invite unlimited collaborators to your canvas. See cursors move, sketches evolve, and AI generations appear instantly for everyone in the session.
+                </p>
+              </div>
+            </div>
+
+            <div class="feature-card group hover:bg-[#1A1818] hover:text-white transition-colors duration-500">
+              <div class="w-16 h-16 rounded-full border border-gray-200 group-hover:border-gray-700 flex flex-shrink-0 items-center justify-center text-gold text-2xl mb-6 md:mb-0">
+                <iconify-icon icon="solar:ruler-cross-pen-linear"></iconify-icon>
+              </div>
+              <div class="flex-1 md:pl-4">
+                <div class="font-display text-xl md:text-2xl italic mb-2 tracking-tight">2. Flexible Environments</div>
+                <p class="font-sans text-sm text-gray-500 group-hover:text-gray-400 leading-relaxed max-w-lg">
+                  Switch seamlessly between an infinite blank canvas for freeform ideation, or a strict grid layout for UI mockups and precise architectural concepts.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- FOOTER -->
+        <footer class="pt-12 md:pt-16 border-t border-[var(--ink-black)] mt-8">
+          <div class="flex flex-col md:flex-row justify-between items-center pt-8 border-t border-gray-200 text-xs text-gray-400 uppercase tracking-widest">
+            <span class="mb-2 md:mb-0">© 2026 UNIDRAW Inc. All Rights Reserved.</span>
+            <div class="flex gap-6">
+              <span>#ColabDraw</span>
+              <span>Made with AI</span>
+            </div>
+          </div>
+        </footer>
+      </main>
+    </div>
+
+    <!-- APP CANVAS VIEW -->
+    <div id="app-view" class="hidden absolute inset-0 bg-[#F9FAFB] z-50 flex flex-col w-full h-full">
+      
+      <!-- App Navbar -->
+      <header class="h-14 border-b border-gray-200 bg-white flex items-center justify-between px-4 shrink-0 shadow-sm z-30">
+        <!-- Left: Logo & File Info -->
+        <div class="flex items-center gap-3 md:gap-6">
+          <button id="close-app-btn" class="p-2 hover:bg-gray-100 rounded-lg text-gray-500 transition-colors flex items-center justify-center tooltip group relative" title="Back to Home">
+            <iconify-icon icon="solar:home-angle-linear" class="text-xl"></iconify-icon>
+          </button>
+          
+          <div class="h-5 w-px bg-gray-200 hidden md:block"></div>
+          
+          <div class="flex flex-col justify-center">
+            <div class="flex items-center gap-2">
+              <input type="text" id="canvas-title" class="font-sans font-medium text-sm text-gray-900 cursor-text hover:bg-gray-100 px-1 rounded -ml-1 transition-colors bg-transparent border-none outline-none focus:bg-gray-100" value="Untitled Canvas" />
+              <iconify-icon icon="solar:alt-arrow-down-linear" class="text-gray-400 text-xs cursor-pointer"></iconify-icon>
+            </div>
+            <div class="flex items-center gap-2 text-[10px] text-gray-400 font-medium uppercase tracking-wider">
+              <iconify-icon icon="solar:cloud-check-linear" id="sync-icon"></iconify-icon>
+              <span id="sync-status">Saved to Cloud</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Collaborators & Actions -->
+        <div class="flex items-center gap-4 md:gap-6">
+          <div id="collaborators-container" class="hidden md:flex items-center cursor-pointer hover:opacity-80 transition-opacity">
+            <!-- Dynamic users will be inserted here -->
+          </div>
+          
+          <div class="flex items-center gap-2">
+            <button id="undo-btn" class="hidden md:flex items-center justify-center p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors" title="Undo">
+              <iconify-icon icon="solar:history-linear" class="text-xl"></iconify-icon>
+            </button>
+            <button id="clear-btn" class="hidden md:flex items-center justify-center p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Clear Canvas">
+              <iconify-icon icon="solar:trash-bin-trash-linear" class="text-xl"></iconify-icon>
+            </button>
+            <button id="share-btn" class="bg-[#4F46E5] text-white text-xs font-medium px-5 py-2 rounded-full hover:bg-[#4338CA] transition-colors shadow-sm flex items-center gap-2 tracking-wide">
+              <iconify-icon icon="solar:user-plus-linear" class="text-sm"></iconify-icon>
+              Share
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Workspace Area -->
+      <div class="flex-1 relative overflow-hidden bg-grid-pattern z-10" id="workspace-area">
+        
+        <!-- Floating Toolbar (Left) -->
+        <div class="absolute left-4 top-1/2 -translate-y-1/2 bg-white border border-gray-200 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] p-2 flex flex-col gap-1 z-30">
+          <button class="toolbar-btn" data-tool="select" title="Select (V)"><iconify-icon icon="solar:cursor-square-linear" class="text-lg"></iconify-icon></button>
+          <button class="toolbar-btn" data-tool="hand" title="Hand Tool (H)"><iconify-icon icon="solar:hand-shake-linear" class="text-lg"></iconify-icon></button>
+          <div class="w-6 h-px bg-gray-200 mx-auto my-1"></div>
+          <button class="toolbar-btn active" data-tool="pen" title="Pen (P)"><iconify-icon icon="solar:pen-linear" class="text-lg"></iconify-icon></button>
+          <button class="toolbar-btn" data-tool="eraser" title="Eraser (E)"><iconify-icon icon="solar:eraser-linear" class="text-lg"></iconify-icon></button>
+          <button class="toolbar-btn" data-tool="shape" title="Shape (R)"><iconify-icon icon="solar:check-square-linear" class="text-lg"></iconify-icon></button>
+          <button class="toolbar-btn" data-tool="text" title="Text (T)"><iconify-icon icon="solar:text-linear" class="text-lg"></iconify-icon></button>
+          <div class="w-6 h-px bg-gray-200 mx-auto my-1"></div>
+          <button id="ai-gen-btn" class="toolbar-btn text-purple-600 hover:bg-purple-50 hover:text-purple-700" title="AI Generate (Cmd+K)">
+            <iconify-icon icon="solar:magic-stick-3-linear" class="text-lg"></iconify-icon>
+          </button>
+        </div>
+
+        <!-- Floating Properties (Bottom Left) -->
+        <div class="absolute left-20 bottom-6 bg-white border border-gray-200 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] p-3 flex items-center gap-4 z-30">
+          <div class="flex items-center gap-2">
+            <input type="color" id="color-picker" value="#000000" class="w-6 h-6 border-none rounded cursor-pointer p-0 bg-transparent">
+          </div>
+          <div class="w-px h-6 bg-gray-200"></div>
+          <div class="flex items-center gap-2">
+            <iconify-icon icon="solar:slider-minimalistic-horizontal-linear" class="text-gray-400"></iconify-icon>
+            <input type="range" id="size-slider" min="1" max="50" value="5" class="w-20 accent-[#4F46E5]">
+            <span id="size-value" class="text-xs font-medium text-gray-600 w-6">5px</span>
+          </div>
+        </div>
+
+        <!-- Floating Zoom Controls (Bottom Right) -->
+        <div class="absolute right-6 bottom-6 bg-white border border-gray-200 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] p-1 flex items-center gap-1 z-30">
+          <button id="zoom-out-btn" class="w-8 h-8 flex items-center justify-center text-gray-500 hover:bg-gray-100 rounded-lg"><iconify-icon icon="solar:minus-circle-linear"></iconify-icon></button>
+          <span id="zoom-level" class="text-xs font-medium text-gray-700 w-12 text-center">100%</span>
+          <button id="zoom-in-btn" class="w-8 h-8 flex items-center justify-center text-gray-500 hover:bg-gray-100 rounded-lg"><iconify-icon icon="solar:add-circle-linear"></iconify-icon></button>
+        </div>
+
+        <!-- AI Generation Overlay -->
+        <div id="ai-overlay" class="hidden absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-md border border-purple-200 rounded-2xl shadow-2xl p-6 flex-col items-center justify-center z-40 w-80 text-center">
+            <iconify-icon icon="solar:magic-stick-3-linear" class="text-4xl text-purple-500 animate-pulse mb-4"></iconify-icon>
+            <h3 class="font-display italic text-xl mb-2 text-gray-800">AI Generating...</h3>
+            <p class="font-sans text-xs text-gray-500 mb-4">Analyzing canvas structure to produce an aesthetic masterpiece.</p>
+            <div class="w-full h-1 bg-gray-200 rounded-full overflow-hidden">
+                <div class="h-full bg-purple-500 animate-[pulse_1.5s_ease-in-out_infinite]" style="width: 60%"></div>
+            </div>
+        </div>
+
+        <!-- The Main Canvas -->
+        <canvas id="drawing-canvas" class="absolute inset-0 cursor-crosshair touch-none" style="width: 100%; height: 100%;"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { io } from 'socket.io-client';
+
+    const API_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:4001';
+    let socket = null;
+    let currentCanvasId = null;
+    let currentUsername = null;
+    let currentUserId = `user_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Tools & State
+    let currentTool = 'pen'; // pen, eraser, shape, text, select, hand
+    let currentColor = '#000000';
+    let currentSize = 5;
+    let isDrawing = false;
+    let isPanning = false;
+    let points = [];
+    let strokes = [];
+    let activeUsers = [];
+    let userCursors = new Map();
+
+    // Pan & Zoom
+    let zoomLevel = 1;
+    let panX = 0;
+    let panY = 0;
+    let startPanX = 0;
+    let startPanY = 0;
+
+    // DOM Elements
+    const landingView = document.getElementById('landing-view');
+    const appView = document.getElementById('app-view');
+    const openAppBtns = document.querySelectorAll('.open-app-btn');
+    const closeAppBtn = document.getElementById('close-app-btn');
+    const canvas = document.getElementById('drawing-canvas');
+    const ctx = canvas.getContext('2d');
+    const colorPicker = document.getElementById('color-picker');
+    const sizeSlider = document.getElementById('size-slider');
+    const sizeValue = document.getElementById('size-value');
+    const canvasTitle = document.getElementById('canvas-title');
+    const collaboratorsContainer = document.getElementById('collaborators-container');
+    const workspaceArea = document.getElementById('workspace-area');
+    const syncStatus = document.getElementById('sync-status');
+    const syncIcon = document.getElementById('sync-icon');
+    
+    // Action Buttons
+    const undoBtn = document.getElementById('undo-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const shareBtn = document.getElementById('share-btn');
+    const zoomInBtn = document.getElementById('zoom-in-btn');
+    const zoomOutBtn = document.getElementById('zoom-out-btn');
+    const zoomLevelText = document.getElementById('zoom-level');
+    const aiGenBtn = document.getElementById('ai-gen-btn');
+    const aiOverlay = document.getElementById('ai-overlay');
+
+    // Resize canvas
+    function resizeCanvas() {
+      const rect = workspaceArea.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      canvas.style.width = `${rect.width}px`;
+      canvas.style.height = `${rect.height}px`;
+      
+      ctx.scale(dpr, dpr);
+      redrawCanvas();
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+
+    // Initialize Socket.io
+    function initSocket() {
+      if (socket) return;
+      
+      socket = io(API_URL, {
+        reconnection: true,
+        transports: ['websocket', 'polling'],
+      });
+
+      socket.on('connect', () => {
+        console.log('✅ Connected to server');
+        setSyncStatus('Connected', 'solar:cloud-check-linear');
+      });
+
+      socket.on('draw_stroke', (stroke) => {
+        if (stroke.action === 'clear') {
+          strokes = [];
+        } else if (stroke.action === 'undo') {
+          strokes = strokes.filter(s => s.id !== stroke.id);
+        } else {
+          strokes.push(stroke);
+        }
+        // Redraw handled by renderLoop
+      });
+
+      socket.on('user_joined', (user) => {
+        activeUsers.push(user);
+        updateActiveUsers();
+      });
+
+      socket.on('user_left', (data) => {
+        activeUsers = activeUsers.filter(u => u.userId !== data.userId);
+        userCursors.delete(data.userId);
+        updateActiveUsers();
+      });
+
+      socket.on('active_users', (users) => {
+        activeUsers = users;
+        updateActiveUsers();
+      });
+
+      socket.on('cursor_move', (data) => {
+        // Ignore our own cursor events just in case they bounce back
+        if (data.userId !== currentUserId) {
+          userCursors.set(data.userId, { x: data.x, y: data.y });
+          // We don't redraw the whole canvas here, we use a requestAnimationFrame loop instead
+        }
+      });
+
+      socket.on('error', (error) => {
+        console.error('Socket error:', error);
+      });
+    }
+
+    function setSyncStatus(text, icon) {
+      syncStatus.textContent = text;
+      syncIcon.setAttribute('icon', icon);
+    }
+
+    // Join Canvas
+    async function joinCanvas(forceCanvasId = null) {
+      let targetCanvasId = forceCanvasId;
+      
+      // Only prompt for username if we don't have one
+      if (!currentUsername) {
+        currentUsername = prompt('Enter your name:') || 'Anonymous';
+      }
+
+      if (!targetCanvasId) {
+        targetCanvasId = `canvas-${Date.now()}`;
+      }
+      
+      currentCanvasId = targetCanvasId;
+      
+      // Update URL without reloading
+      const newUrl = new URL(window.location);
+      newUrl.searchParams.set('canvas', currentCanvasId);
+      window.history.pushState({}, '', newUrl);
+
+      landingView.classList.add('hidden');
+      appView.classList.remove('hidden');
+
+      resizeCanvas();
+      initSocket();
+      
+      // Start render loop
+      if (!animationFrameId) {
+        renderLoop();
+      }
+
+      try {
+        const res = await fetch(`${API_URL.replace('ws://', 'http://')}/api/canvas/${currentCanvasId}`);
+        const data = await res.json();
+        if (data.success && data.canvas.strokes) {
+          // Process strokes to handle clears/undos in history
+          let processedStrokes = [];
+          data.canvas.strokes.forEach(stroke => {
+            if (stroke.action === 'clear') {
+              processedStrokes = [];
+            } else if (stroke.action === 'undo') {
+              processedStrokes = processedStrokes.filter(s => s.id !== stroke.id);
+            } else {
+              processedStrokes.push(stroke);
+            }
+          });
+          strokes = processedStrokes;
+          // Redraw handled by renderLoop
+        }
+      } catch (err) {
+        console.error('Failed to load canvas data:', err);
+      }
+
+      const randomColor = `hsl(${Math.random() * 360}, 70%, 60%)`;
+      socket.emit('join_canvas', {
+        canvasId: currentCanvasId,
+        userId: currentUserId,
+        username: currentUsername,
+        color: randomColor,
+      });
+    }
+
+    // Update active users display
+    function updateActiveUsers() {
+      collaboratorsContainer.innerHTML = '';
+      
+      // Add visible avatars
+      const visibleUsers = activeUsers.slice(0, 3);
+      visibleUsers.forEach((user, index) => {
+        const div = document.createElement('div');
+        div.className = `w-8 h-8 rounded-full border-2 border-white relative shadow-sm flex items-center justify-center text-xs font-bold text-white`;
+        div.style.backgroundColor = user.color;
+        div.style.zIndex = 30 - index;
+        if (index > 0) div.classList.add('-ml-3');
+        div.title = user.username;
+        div.textContent = user.username.substring(0, 2).toUpperCase();
+        collaboratorsContainer.appendChild(div);
+      });
+
+      // Add extra count
+      if (activeUsers.length > 3) {
+        const extra = document.createElement('div');
+        extra.className = `w-8 h-8 rounded-full border-2 border-white relative z-0 shadow-sm -ml-3 bg-gray-100 flex items-center justify-center text-[10px] font-semibold text-gray-600`;
+        extra.textContent = `+${activeUsers.length - 3}`;
+        collaboratorsContainer.appendChild(extra);
+      }
+    }
+
+    // Coordinate Transformation
+    function getCanvasCoords(e) {
+      const rect = canvas.getBoundingClientRect();
+      const rawX = e.clientX - rect.left;
+      const rawY = e.clientY - rect.top;
+      return {
+        x: (rawX - panX) / zoomLevel,
+        y: (rawY - panY) / zoomLevel
+      };
+    }
+
+    // Redraw canvas
+    function redrawCanvas() {
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0); // reset transform
+      const dpr = window.devicePixelRatio || 1;
+      ctx.scale(dpr, dpr);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      ctx.translate(panX, panY);
+      ctx.scale(zoomLevel, zoomLevel);
+
+      strokes.forEach(stroke => {
+        ctx.strokeStyle = stroke.color;
+        ctx.lineWidth = stroke.size;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        if (stroke.tool === 'text' && stroke.text) {
+          ctx.font = `${stroke.size * 4}px Inter`;
+          ctx.fillStyle = stroke.tool === 'eraser' ? '#ffffff' : stroke.color;
+          if (stroke.tool === 'eraser') ctx.globalCompositeOperation = 'destination-out';
+          ctx.fillText(stroke.text, stroke.points[0].x, stroke.points[0].y);
+          ctx.globalCompositeOperation = 'source-over';
+          return;
+        }
+
+        if (stroke.tool === 'shape' && stroke.points.length === 2) {
+          const start = stroke.points[0];
+          const end = stroke.points[1];
+          if (stroke.tool === 'eraser') ctx.globalCompositeOperation = 'destination-out';
+          ctx.strokeRect(start.x, start.y, end.x - start.x, end.y - start.y);
+          ctx.globalCompositeOperation = 'source-over';
+          return;
+        }
+
+        if (stroke.points.length === 0) return;
+
+        if (stroke.tool === 'eraser') {
+          ctx.globalCompositeOperation = 'destination-out';
+          ctx.strokeStyle = 'rgba(0,0,0,1)';
+        }
+
+        if (stroke.points.length < 2) {
+          ctx.beginPath();
+          ctx.arc(stroke.points[0].x, stroke.points[0].y, ctx.lineWidth / 2, 0, Math.PI * 2);
+          ctx.fillStyle = ctx.strokeStyle;
+          ctx.fill();
+        } else {
+          ctx.beginPath();
+          ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
+          let i;
+          for (i = 1; i < stroke.points.length - 2; i++) {
+            const xc = (stroke.points[i].x + stroke.points[i + 1].x) / 2;
+            const yc = (stroke.points[i].y + stroke.points[i + 1].y) / 2;
+            ctx.quadraticCurveTo(stroke.points[i].x, stroke.points[i].y, xc, yc);
+          }
+          // smooth through the last points
+          if (i < stroke.points.length - 1) {
+            ctx.quadraticCurveTo(stroke.points[i].x, stroke.points[i].y, stroke.points[i + 1].x, stroke.points[i + 1].y);
+          }
+          ctx.stroke();
+        }
+        ctx.globalCompositeOperation = 'source-over';
+      });
+
+      // Draw the current stroke if drawing
+      if (isDrawing && points.length > 0) {
+        if (currentTool === 'shape' && points.length >= 2) {
+          ctx.strokeStyle = currentColor;
+          ctx.lineWidth = currentSize;
+          ctx.strokeRect(points[0].x, points[0].y, points[1].x - points[0].x, points[1].y - points[0].y);
+        } else if (currentTool !== 'shape') {
+          if (currentTool === 'eraser') {
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.strokeStyle = 'rgba(0,0,0,1)';
+          } else {
+            ctx.strokeStyle = currentColor;
+          }
+          ctx.lineWidth = currentSize;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          
+          if (points.length < 2) {
+            ctx.beginPath();
+            ctx.arc(points[0].x, points[0].y, ctx.lineWidth / 2, 0, Math.PI * 2);
+            ctx.fillStyle = ctx.strokeStyle;
+            ctx.fill();
+          } else {
+            ctx.beginPath();
+            ctx.moveTo(points[0].x, points[0].y);
+            let i;
+            for (i = 1; i < points.length - 2; i++) {
+              const xc = (points[i].x + points[i + 1].x) / 2;
+              const yc = (points[i].y + points[i + 1].y) / 2;
+              ctx.quadraticCurveTo(points[i].x, points[i].y, xc, yc);
+            }
+            if (i < points.length - 1) {
+              ctx.quadraticCurveTo(points[i].x, points[i].y, points[i + 1].x, points[i + 1].y);
+            }
+            ctx.stroke();
+          }
+          ctx.globalCompositeOperation = 'source-over';
+        }
+      }
+
+      ctx.restore();
+      drawCursors();
+    }
+
+    // Draw other users' cursors
+    function drawCursors() {
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      const dpr = window.devicePixelRatio || 1;
+      ctx.scale(dpr, dpr);
+
+      userCursors.forEach((pos, userId) => {
+        // Don't draw our own cursor
+        if (userId === currentUserId) return;
+        
+        const user = activeUsers.find(u => u.userId === userId);
+        if (!user) return;
+
+        const screenX = pos.x * zoomLevel + panX;
+        const screenY = pos.y * zoomLevel + panY;
+
+        // Draw cursor arrow
+        ctx.fillStyle = user.color;
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(screenX, screenY);
+        ctx.lineTo(screenX + 10, screenY + 15);
+        ctx.lineTo(screenX + 5, screenY + 15);
+        ctx.lineTo(screenX, screenY + 20);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        
+        // Draw label
+        ctx.font = 'bold 10px Inter';
+        const textWidth = ctx.measureText(user.username).width;
+        ctx.fillStyle = user.color;
+        ctx.fillRect(screenX + 12, screenY + 12, textWidth + 8, 16);
+        ctx.fillStyle = 'white';
+        ctx.fillText(user.username, screenX + 16, screenY + 24);
+      });
+      ctx.restore();
+    }
+
+    // Render Loop
+    let animationFrameId;
+    function renderLoop() {
+      redrawCanvas();
+      animationFrameId = requestAnimationFrame(renderLoop);
+    }
+
+    // Canvas events
+    let lastCursorEmit = 0;
+    canvas.addEventListener('pointerdown', (e) => {
+      if (!currentCanvasId) return;
+      const { x, y } = getCanvasCoords(e);
+
+      if (currentTool === 'hand') {
+        isPanning = true;
+        startPanX = e.clientX - panX;
+        startPanY = e.clientY - panY;
+        canvas.style.cursor = 'grabbing';
+        return;
+      }
+
+      if (currentTool === 'text') {
+        const text = prompt('Enter text:');
+        if (text) {
+          const stroke = {
+            id: `stroke_${Date.now()}`,
+            userId: currentUserId,
+            username: currentUsername,
+            points: [{ x, y }],
+            color: currentColor,
+            size: currentSize,
+            tool: 'text',
+            text: text,
+            timestamp: Date.now(),
+          };
+          socket.emit('draw_stroke', { canvasId: currentCanvasId, stroke });
+          strokes.push(stroke);
+        }
+        currentTool = 'pen';
+        updateToolbarUI();
+        return;
+      }
+
+      if (currentTool === 'select') return;
+
+      isDrawing = true;
+      points = [{ x, y }];
+    });
+
+    canvas.addEventListener('pointermove', (e) => {
+      if (!currentCanvasId) return;
+
+      if (isPanning) {
+        panX = e.clientX - startPanX;
+        panY = e.clientY - startPanY;
+        return;
+      }
+
+      const { x, y } = getCanvasCoords(e);
+
+      if (socket) {
+        // Debounce cursor movement to prevent excessive redrawing and trails
+        if (!lastCursorEmit || Date.now() - lastCursorEmit > 16) { // ~60fps
+          socket.emit('cursor_move', { canvasId: currentCanvasId, x, y });
+          lastCursorEmit = Date.now();
+        }
+      }
+
+      if (!isDrawing) return;
+
+      if (currentTool === 'shape') {
+        points[1] = { x, y };
+        // Redraw will be handled by renderLoop
+        return;
+      }
+
+      points.push({ x, y });
+
+      if (points.length > 1) {
+        // Just rely on the render loop for drawing, so we don't duplicate drawing strokes
+        // that are still in progress. We'll add the active stroke to the render pass.
+      }
+    });
+
+    canvas.addEventListener('pointerup', () => {
+      if (isPanning) {
+        isPanning = false;
+        canvas.style.cursor = 'grab';
+        return;
+      }
+
+      if (!isDrawing || !currentCanvasId) return;
+      isDrawing = false;
+
+      const stroke = {
+        id: `stroke_${Date.now()}`,
+        userId: currentUserId,
+        username: currentUsername,
+        points,
+        color: currentColor,
+        size: currentSize,
+        opacity: 1,
+        tool: currentTool,
+        timestamp: Date.now(),
+      };
+
+      socket.emit('draw_stroke', { canvasId: currentCanvasId, stroke });
+      strokes.push(stroke);
+      points = [];
+      setSyncStatus('Saved to Cloud', 'solar:cloud-check-linear');
+    });
+
+    canvas.addEventListener('pointerleave', () => {
+      isDrawing = false;
+      if (isPanning) {
+        isPanning = false;
+        canvas.style.cursor = 'grab';
+      }
+    });
+
+    // Toolbar Tools
+    const toolBtns = document.querySelectorAll('.toolbar-btn[data-tool]');
+    function updateToolbarUI() {
+      toolBtns.forEach(b => {
+        b.classList.remove('active', 'bg-[#EEF2FF]', 'text-[#4F46E5]');
+        if (b.dataset.tool === currentTool) {
+          b.classList.add('active', 'bg-[#EEF2FF]', 'text-[#4F46E5]');
+        }
+      });
+      canvas.style.cursor = currentTool === 'hand' ? 'grab' : 
+                            currentTool === 'text' ? 'text' : 
+                            currentTool === 'select' ? 'default' : 'crosshair';
+    }
+
+    toolBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        currentTool = e.currentTarget.dataset.tool;
+        updateToolbarUI();
+      });
+    });
+
+    // UI Controls
+    colorPicker.addEventListener('change', (e) => {
+      currentColor = e.target.value;
+      if (currentTool === 'eraser') {
+        currentTool = 'pen';
+        updateToolbarUI();
+      }
+    });
+
+    sizeSlider.addEventListener('input', (e) => {
+      currentSize = Number(e.target.value);
+      sizeValue.textContent = currentSize + 'px';
+    });
+
+    // Zoom
+    function setZoom(level) {
+      zoomLevel = Math.max(0.1, Math.min(level, 5));
+      zoomLevelText.textContent = `${Math.round(zoomLevel * 100)}%`;
+    }
+    zoomInBtn.addEventListener('click', () => setZoom(zoomLevel + 0.1));
+    zoomOutBtn.addEventListener('click', () => setZoom(zoomLevel - 0.1));
+
+    // Actions
+    clearBtn.addEventListener('click', () => {
+      if(confirm('Are you sure you want to clear the canvas?')) {
+        const stroke = { action: 'clear', timestamp: Date.now() };
+        socket.emit('draw_stroke', { canvasId: currentCanvasId, stroke });
+        strokes = [];
+      }
+    });
+
+    undoBtn.addEventListener('click', () => {
+      const myStrokes = strokes.filter(s => s.userId === currentUserId);
+      if (myStrokes.length > 0) {
+        const lastStroke = myStrokes[myStrokes.length - 1];
+        const stroke = { action: 'undo', id: lastStroke.id, timestamp: Date.now() };
+        socket.emit('draw_stroke', { canvasId: currentCanvasId, stroke });
+        strokes = strokes.filter(s => s.id !== lastStroke.id);
+      }
+    });
+
+    shareBtn.addEventListener('click', () => {
+      const url = window.location.href;
+      navigator.clipboard.writeText(url).then(() => {
+        alert('Canvas URL copied to clipboard! Share it with collaborators.');
+      });
+    });
+
+    aiGenBtn.addEventListener('click', () => {
+      aiOverlay.classList.remove('hidden');
+      aiOverlay.classList.add('flex');
+      setTimeout(() => {
+        aiOverlay.classList.add('hidden');
+        aiOverlay.classList.remove('flex');
+        alert('AI Generation Complete! (Mock action)');
+      }, 3000);
+    });
+
+    openAppBtns.forEach(btn => {
+      btn.addEventListener('click', () => joinCanvas());
+    });
+
+    closeAppBtn.addEventListener('click', () => {
+      if (socket) {
+        socket.emit('leave_canvas', { canvasId: currentCanvasId });
+        socket.disconnect();
+        socket = null;
+      }
+      
+      // Stop render loop
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
+      
+      // Remove canvas from URL
+      const newUrl = new URL(window.location);
+      newUrl.searchParams.delete('canvas');
+      window.history.pushState({}, '', newUrl);
+
+      appView.classList.add('hidden');
+      landingView.classList.remove('hidden');
+      strokes = [];
+      activeUsers = [];
+      userCursors.clear();
+      setZoom(1);
+      panX = 0; panY = 0;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    });
+
+    // Check for canvas in URL on load
+    const urlParams = new URLSearchParams(window.location.search);
+    const canvasFromUrl = urlParams.get('canvas');
+    if (canvasFromUrl) {
+      joinCanvas(canvasFromUrl);
+    }
+
+    console.log('🎨 UNIDRAW Frontend loaded');
+  </script>
+</body>
+</html>
