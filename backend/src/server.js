@@ -10,8 +10,16 @@ dotenv.config();
 
 const app = express();
 const httpServer = createServer(app);
+const allowedOrigins = [
+  /^https?:\/\/localhost(:\d+)?$/,   // local dev
+  /^https:\/\/.*\.vercel\.app$/,     // all Vercel preview + prod URLs
+  process.env.FRONTEND_URL,          // explicit custom domain from env
+].filter(Boolean);
+
 const allowedOrigin = (origin, cb) => {
-  if (!origin || /^https?:\/\/localhost(:\d+)?$/.test(origin)) {
+  if (!origin || allowedOrigins.some(o =>
+    typeof o === 'string' ? o === origin : o.test(origin)
+  )) {
     cb(null, true);
   } else {
     cb(new Error('CORS not allowed'), false);
