@@ -572,7 +572,7 @@ canvas.addEventListener('pointerup', async (e) => {
   // ─── LASSO AI ───
   if (tool === 'lasso') {
     if (localStorage.getItem('ai_lasso_used')) {
-      alert('Free Beta Limit Reached: The AI Lasso has already been used on this device.\n\nThank you for trying UniDraw AI! Support the Founder of UNI Organisation to unlock unlimited generations.');
+      alert('Free Beta Limit Reached: The AI Lasso has already been used on this device.');
       pts = [];
       return;
     }
